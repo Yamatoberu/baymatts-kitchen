@@ -1,9 +1,8 @@
-
 # BayMatt's Kitchen
 
 **Your recipes. Your kitchen. All in one place.**
 
-*A BayMatt Labs project.*
+_A BayMatt Labs project._
 
 ## Overview
 
@@ -76,4 +75,73 @@ BayMatt's Kitchen is guided by a few simple principles:
 ---
 
 **BayMatt's Kitchen**  
-*Made with care by BayMatt Labs.*
+_Made with care by BayMatt Labs._
+
+## Running the app
+
+Requires Node.js 22.13 or newer (Node 22 LTS recommended).
+
+```bash
+npm install
+npm run dev
+```
+
+Open http://127.0.0.1:3000. Development runs the API and Vite together on one port.
+The initial recipe library is empty. Choose **Try an example recipe** to add the
+included sample, or **Add a recipe** to start your own collection.
+
+The default local mode stores recipes in `data/kitchen.sqlite`. Back up that file
+while the app is stopped, or use **Export** for a portable JSON copy including
+recipe history. The JSON export is a backup/interchange format; import is not yet
+implemented. Local files and credentials are excluded from Git.
+
+### Neon PostgreSQL
+
+Copy `.env.example` to `.env`, set `DATABASE_URL` to your Neon pooled connection
+string, and set `DATABASE_URL_UNPOOLED` to the direct connection string for
+migrations. Apply the versioned schema before starting the app.
+
+```bash
+npm run db:migrate
+npm run dev
+```
+
+The server checks the schema at startup. Configured database failures stop startup
+so that a connection problem cannot silently switch your storage. Local and Neon
+collections are independent; switching the connection does not migrate existing
+local recipes. PostgreSQL connections use the TLS settings in the connection URL.
+
+### Verification and production build
+
+```bash
+npm test
+npm run check
+npm run build
+npm start
+```
+
+The API regression test covers creation, editing, revision history, stale edits,
+validation, cross-origin write rejection, persistence across restart, and deletion.
+`npm run check` checks the React TypeScript frontend. `npm start` serves the built
+frontend and API on one port. The default listener is `127.0.0.1`; this first
+release is a personal, local application. Authentication and access control must
+be added before exposing a shared or public deployment. `HOST`, `PORT`, and
+`DATA_FILE` can be set in `.env` when required.
+
+### Phase 1 behavior
+
+- Create, edit, search, favorite, and delete recipes with structured ingredients,
+  ordered steps, attribution, original source URL/text, notes, nutrition, and
+  recorded allergens.
+- Scale ingredient quantities to any positive serving count. Nutrition estimates
+  are entered per serving, with totals calculated for the selected yield.
+- Each edit saves a complete previous version. Inspect and restore a version
+  without erasing subsequent history. Conflicting edits from another window are
+  rejected until the recipe is reloaded.
+- Original recipe cards can be transcribed into the original-text field. Image
+  upload, OCR, automated nutrition/allergen detection, accounts, meal planning,
+  and pantry management remain future work.
+
+The interface uses Google Fonts and an Unsplash kitchen photograph. All recipe
+operations work with local assets and system font fallbacks when those services
+are unavailable.

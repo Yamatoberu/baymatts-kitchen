@@ -12,6 +12,7 @@
     "db:migrate": "node --env-file-if-exists=.env server/migrate.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.1",
     "express": "^5.1.0",
     "pg": "^8.16.3",
     "react": "^19.1.1",

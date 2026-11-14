@@ -10,7 +10,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    appPromise ??= createStore({ databaseUrl: process.env.DATABASE_URL })
+    appPromise ??= createStore({
+      databaseUrl: process.env.DATABASE_URL,
+      serverless: true,
+    })
       .then(createApp)
       .catch((error) => {
         appPromise = undefined;

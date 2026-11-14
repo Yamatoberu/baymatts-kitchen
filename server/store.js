@@ -10,13 +10,24 @@ export class StoreError extends Error {
 }
 export async function createStore({
   databaseUrl,
+  serverless = false,
   file = "data/kitchen.sqlite",
 } = {}) {
   let pool, db;
   if (databaseUrl) {
-    const { default: pg } = await import("pg");
-    pool = new pg.Pool({ connectionString: databaseUrl });
-    await pool.query("SELECT id FROM recipes LIMIT 0");
+    const { Pool } = serverless
+      ? await import("@neondatabase/serverless")
+      : (await import("pg")).default;
+    pool = new Pool({
+      connectionString: databaseUrl,
+      connectionTimeoutMillis: 8000,
+    });
+    try {
+      await pool.query("SELECT id FROM recipes LIMIT 0");
+    } catch (error) {
+      await pool.end();
+      throw error;
+    }
   } else {
     const { DatabaseSync } = await import("node:sqlite");
     mkdirSync(dirname(file), { recursive: true });

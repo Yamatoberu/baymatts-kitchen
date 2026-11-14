@@ -11,6 +11,7 @@ export type Nutrition = {
   fat: number | null;
 };
 export type RecipeData = {
+  imageUrl?: string;
   title: string;
   description: string;
   category: string;

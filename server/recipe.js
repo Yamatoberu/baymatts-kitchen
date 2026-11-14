@@ -3,6 +3,17 @@ const text = z.string().trim().max(20000);
 const number = z.number().finite().min(0).max(1000000);
 export const recipeSchema = z.object({
   title: text.min(1).max(160),
+  imageUrl: z
+    .union([
+      z.literal(""),
+      z
+        .url()
+        .refine(
+          (value) => /^https?:\/\//.test(value),
+          "Use an http or https image URL",
+        ),
+    ])
+    .default(""),
   description: text.default(""),
   category: text
     .min(1)

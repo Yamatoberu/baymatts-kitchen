@@ -150,7 +150,12 @@ function App() {
           aria-label="BayMatt's Kitchen home"
         >
           <span className="brand-mark">
-            B<span>✦</span>
+            <span className="chef-hat" />
+            <span className="robot-face">
+              <i />
+              <i />
+            </span>
+            <span className="robot-bow" />
           </span>
           <span>
             BayMatt’s
@@ -200,7 +205,19 @@ function App() {
       </aside>
       <main>
         <header className="topbar">
-          <span>Your recipes. Your kitchen.</span>
+          <label className="search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              disabled={!!editing}
+              aria-label="Search recipes or ingredients"
+              placeholder="Search recipes, ingredients, or sources…"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelected(null);
+              }}
+            />
+          </label>
           <span className="storage">
             <i />
             {storage === "postgres"
@@ -281,13 +298,16 @@ function App() {
                 <div>
                   <p className="eyebrow">THE RECIPE COLLECTION</p>
                   <h1>
-                    {category === "All recipes"
-                      ? "Good food, kept close."
-                      : category}
+                    {query
+                      ? "Search Results"
+                      : category === "All recipes"
+                        ? "Recipes"
+                        : category}
                   </h1>
                   <p className="subtitle">
-                    The everyday favorites. The family traditions. The next
-                    great meal.
+                    {query
+                      ? `Found ${filtered.length} recipes for “${query}”`
+                      : "Your collection of recipes, memories, and everything in between."}
                   </p>
                 </div>
                 <button
@@ -297,52 +317,37 @@ function App() {
                   <span>＋</span> Add a recipe
                 </button>
               </div>
-              <section className="welcome-banner">
-                <div>
-                  <p className="eyebrow">MAKE ROOM FOR SOMETHING GOOD</p>
-                  <h2>
-                    Every recipe has a story.
-                    <br />
-                    Keep yours here.
-                  </h2>
-                  <p>
-                    A home for the dishes you love, and the people
-                    <br className="desktop" /> who first brought them to your
-                    table.
-                  </p>
-                </div>
-                <div
-                  className="banner-photo"
-                  role="img"
-                  aria-label="Fresh herbs and ingredients on a kitchen table"
-                />
-              </section>
               <div className="collection-toolbar">
-                <div>
-                  <h2>{category}</h2>
-                  <span>
-                    {filtered.length}{" "}
-                    {filtered.length === 1 ? "recipe" : "recipes"}
-                  </span>
+                <div className="filter-chips">
+                  {["All recipes", "Favorites", ...categories].map((item) => (
+                    <button
+                      key={item}
+                      className={
+                        category === item ? "filter-chip active" : "filter-chip"
+                      }
+                      onClick={() => setCategory(item)}
+                    >
+                      {item === "Favorites" ? "♡ " : ""}
+                      {item}
+                      <span>
+                        {item === "All recipes"
+                          ? recipes.length
+                          : recipes.filter((recipe) =>
+                              item === "Favorites"
+                                ? recipe.favorite
+                                : recipe.category === item,
+                            ).length}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <div className="tools">
-                  <label className="search">
-                    <span aria-hidden="true">⌕</span>
-                    <input
-                      aria-label="Search recipes or ingredients"
-                      placeholder="Search recipes, ingredients…"
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                    />
-                  </label>
-                  <button
-                    className="quiet"
-                    onClick={exportRecipes}
-                    disabled={!recipes.length}
-                  >
-                    Export
-                  </button>
-                </div>
+                <button
+                  className="secondary"
+                  onClick={exportRecipes}
+                  disabled={!recipes.length}
+                >
+                  Export recipes
+                </button>
               </div>
               {loading ? (
                 <div className="empty" role="status">
@@ -357,14 +362,14 @@ function App() {
                       onClick={() => setSelected(recipe)}
                     >
                       <div className="card-art">
-                        <span>{recipe.category}</span>
-                        <b aria-hidden="true">{recipe.favorite ? "♥" : "✦"}</b>
+                        <RecipePhoto recipe={recipe} />
+                        {recipe.favorite && <b aria-label="Favorite">♥</b>}
                       </div>
                       <div className="card-content">
-                        <p className="eyebrow">
-                          {recipe.source || "FROM YOUR KITCHEN"}
-                        </p>
                         <h3>{recipe.title}</h3>
+                        <p className="card-source">
+                          ♧ {recipe.source || "Your kitchen"}
+                        </p>
                         <p>
                           {recipe.description ||
                             `${recipe.ingredients.length} ingredients, made your way.`}
@@ -375,7 +380,9 @@ function App() {
                               ? `${recipe.minutes} min`
                               : "Time not set"}
                           </span>
-                          <span>Serves {recipe.servings}</span>
+                          <span className="category-badge">
+                            {recipe.category}
+                          </span>
                         </footer>
                       </div>
                     </button>
@@ -417,6 +424,51 @@ function App() {
   );
 }
 
+function RecipePhoto({ recipe }: { recipe: RecipeData }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [recipe.imageUrl]);
+  return recipe.imageUrl && !failed ? (
+    <img
+      src={recipe.imageUrl}
+      alt={recipe.title}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  ) : (
+    <div className="photo-placeholder">
+      <span aria-hidden="true">♧</span>
+      <small>No recipe photo</small>
+    </div>
+  );
+}
+function Tabs({
+  label,
+  tabs,
+  active,
+  onChange,
+}: {
+  label: string;
+  tabs: string[];
+  active: string;
+  onChange: (tab: string) => void;
+}) {
+  return (
+    <nav className="tabs" aria-label={label}>
+      {tabs.map((tab) => (
+        <button
+          type="button"
+          key={tab}
+          aria-current={active === tab ? "page" : undefined}
+          className={active === tab ? "active" : ""}
+          onClick={() => onChange(tab)}
+        >
+          {tab}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 function RecipeDetail({
   recipe,
   busy,
@@ -437,6 +489,7 @@ function RecipeDetail({
   const [servings, setServings] = useState(recipe.servings);
   const [checked, setChecked] = useState<number[]>([]);
   const [version, setVersion] = useState<RecipeVersion | null>(null);
+  const [tab, setTab] = useState("Overview");
   const current = version || recipe;
   const factor = servings / current.servings;
   return (
@@ -478,156 +531,260 @@ function RecipeDetail({
           </button>
         </div>
       )}
-      <div className="attribution">
-        From {current.source || "your kitchen"}{" "}
-        {current.sourceUrl && (
-          <a href={current.sourceUrl} target="_blank" rel="noreferrer">
-            View original source ↗
-          </a>
-        )}
-      </div>
-      <div className="detail-grid">
-        <section className="ingredient-panel">
-          <div className="section-title">
-            <h2>Ingredients</h2>
-            <label>
-              Servings{" "}
-              <input
-                aria-label="Scale to servings"
-                type="number"
-                min="1"
-                max="10000"
-                value={servings}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  if (value > 0 && value <= 10000) setServings(value);
-                }}
-              />
-            </label>
-          </div>
-          <p className="muted">
-            Original recipe serves {current.servings}. Check off as you go.
-          </p>
-          <ul className="ingredients">
-            {current.ingredients.map((ingredient, index) => (
-              <li key={index}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={checked.includes(index)}
-                    onChange={() =>
-                      setChecked((items) =>
-                        items.includes(index)
-                          ? items.filter((item) => item !== index)
-                          : [...items, index],
-                      )
-                    }
-                  />
-                  <span>
-                    {ingredient.quantity !== null && (
-                      <strong>
-                        {Number((ingredient.quantity * factor).toFixed(2))}{" "}
-                      </strong>
-                    )}
-                    {ingredient.unit} {ingredient.name}
-                    {ingredient.preparation && (
-                      <small>{ingredient.preparation}</small>
-                    )}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="directions">
-          <h2>At the stove</h2>
-          <ol>
-            {current.steps.map((step, index) => (
-              <li key={index}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <p>{step}</p>
-              </li>
-            ))}
-          </ol>
-          {current.notes && (
-            <div className="cook-note">
-              <h3>Kitchen notes</h3>
-              <p>{current.notes}</p>
-            </div>
-          )}
-        </section>
-      </div>
-      <section className="nutrition">
+      <div className="recipe-hero">
         <div>
-          <h2>Nutrition & allergens</h2>
-          <p className="muted">
-            User-entered estimates per serving. Totals below adjust with the
-            selected servings.
-          </p>
+          <div className="recipe-tags">
+            <span className="category-badge">{current.category}</span>
+            {recipe.favorite && (
+              <span className="pink-badge">Favorite recipe</span>
+            )}
+          </div>
+          <div className="hero-photo">
+            <RecipePhoto recipe={current} />
+          </div>
         </div>
-        <div className="nutrition-values">
+        <aside className="nutrition-summary">
+          <p className="summary-stat">
+            ◷ <strong>{current.minutes} min</strong>
+            <small>Total Time</small>
+          </p>
+          <p className="summary-stat">
+            ♧ <strong>{current.servings}</strong>
+            <small>Servings</small>
+          </p>
+          <h3>
+            Nutrition <small>(per serving)</small>
+          </h3>
           {Object.entries(current.nutrition).map(([key, value]) => (
-            <div key={key}>
+            <p className="summary-nutrient" key={key}>
               <strong>
                 {value ?? "—"}
                 {value !== null && key !== "calories" ? "g" : ""}
               </strong>
               <span>{key}</span>
-              <small>
-                {value === null
-                  ? "Unknown total"
-                  : `${Number((value * servings).toFixed(1))}${key === "calories" ? " kcal" : "g"} total`}
-              </small>
-            </div>
+            </p>
           ))}
-        </div>
-        <p>
-          <strong>Recorded allergens</strong>{" "}
-          {current.allergens.length
-            ? current.allergens.join(", ")
-            : "None recorded. Check ingredients and packaging."}
-        </p>
-      </section>
-      {current.originalText && (
-        <section className="original">
-          <h2>Original recipe</h2>
-          <p>{current.originalText}</p>
-        </section>
-      )}
-      <section className="history">
-        <h2>Recipe history</h2>
-        <p className="muted">
-          Version {recipe.revision} · Last saved{" "}
-          {new Date(recipe.updatedAt).toLocaleString()}
-        </p>
-        {recipe.history.length ? (
-          [...recipe.history].reverse().map((item) => (
-            <button
-              className="history-row"
-              key={item.revision}
-              onClick={() => {
-                setVersion(item);
-                setServings(item.servings);
-                setChecked([]);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            >
-              <span>
-                Version {item.revision}
-                <small>{item.changeNote || "Recipe saved"}</small>
-              </span>
-              <span>{new Date(item.updatedAt).toLocaleDateString()} ↗</span>
-            </button>
-          ))
-        ) : (
-          <p>
-            The original version is preserved when you make your first edit.
+          <h3>Allergens</h3>
+          <p className="allergen-list">
+            {current.allergens.join(" · ") ||
+              "None recorded. Check ingredients and packaging."}
           </p>
-        )}
-      </section>
-      <button className="danger text-button" disabled={busy} onClick={onDelete}>
-        Delete recipe
-      </button>
+        </aside>
+      </div>
+      <Tabs
+        label="Recipe sections"
+        tabs={[
+          "Overview",
+          "Ingredients",
+          "Instructions",
+          "Nutrition",
+          "Notes",
+          "History",
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+      {tab === "Overview" && (
+        <div className="overview-grid">
+          <section className="info-panel">
+            <dl>
+              <dt>Source</dt>
+              <dd>{current.source || "Your kitchen"}</dd>
+              <dt>Total Time</dt>
+              <dd>{current.minutes} minutes</dd>
+              <dt>Servings</dt>
+              <dd>{current.servings}</dd>
+              <dt>Version</dt>
+              <dd>{current.revision}</dd>
+            </dl>
+            {current.sourceUrl && (
+              <a href={current.sourceUrl} target="_blank" rel="noreferrer">
+                View original source ↗
+              </a>
+            )}
+          </section>
+          <section className="info-panel">
+            <h2>Description</h2>
+            <p>{current.description || "No description added yet."}</p>
+          </section>
+        </div>
+      )}
+      {tab === "Ingredients" && (
+        <div className="tab-content">
+          {" "}
+          <section className="ingredient-panel">
+            <div className="section-title">
+              <h2>Ingredients</h2>
+              <label>
+                Servings{" "}
+                <input
+                  aria-label="Scale to servings"
+                  type="number"
+                  min="1"
+                  max="10000"
+                  value={servings}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    if (value > 0 && value <= 10000) setServings(value);
+                  }}
+                />
+              </label>
+            </div>
+            <p className="muted">
+              Original recipe serves {current.servings}. Check off as you go.
+            </p>
+            <ul className="ingredients">
+              {current.ingredients.map((ingredient, index) => (
+                <li key={index}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={checked.includes(index)}
+                      onChange={() =>
+                        setChecked((items) =>
+                          items.includes(index)
+                            ? items.filter((item) => item !== index)
+                            : [...items, index],
+                        )
+                      }
+                    />
+                    <span>
+                      {ingredient.quantity !== null && (
+                        <strong>
+                          {Number(
+                            (ingredient.quantity * factor).toFixed(2),
+                          )}{" "}
+                        </strong>
+                      )}
+                      {ingredient.unit} {ingredient.name}
+                      {ingredient.preparation && (
+                        <small>{ingredient.preparation}</small>
+                      )}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      )}
+      {tab === "Instructions" && (
+        <div className="tab-content">
+          {" "}
+          <section className="directions">
+            <h2>At the stove</h2>
+            <ol>
+              {current.steps.map((step, index) => (
+                <li key={index}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <p>{step}</p>
+                </li>
+              ))}
+            </ol>
+            {current.notes && (
+              <div className="cook-note">
+                <h3>Kitchen notes</h3>
+                <p>{current.notes}</p>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+      {tab === "Nutrition" && (
+        <div className="tab-content">
+          {" "}
+          <section className="nutrition">
+            <div>
+              <h2>Nutrition & allergens</h2>
+              <p className="muted">
+                User-entered estimates per serving. Totals below adjust with the
+                selected servings.
+              </p>
+            </div>
+            <div className="nutrition-values">
+              {Object.entries(current.nutrition).map(([key, value]) => (
+                <div key={key}>
+                  <strong>
+                    {value ?? "—"}
+                    {value !== null && key !== "calories" ? "g" : ""}
+                  </strong>
+                  <span>{key}</span>
+                  <small>
+                    {value === null
+                      ? "Unknown total"
+                      : `${Number((value * servings).toFixed(1))}${key === "calories" ? " kcal" : "g"} total`}
+                  </small>
+                </div>
+              ))}
+            </div>
+            <p>
+              <strong>Recorded allergens</strong>{" "}
+              {current.allergens.length
+                ? current.allergens.join(", ")
+                : "None recorded. Check ingredients and packaging."}
+            </p>
+          </section>
+        </div>
+      )}
+      {tab === "Notes" && (
+        <div className="tab-content">
+          <section className="info-panel">
+            <h2>Kitchen notes</h2>
+            <p className="preserve-lines">
+              {current.notes || "No notes added yet."}
+            </p>
+          </section>
+          <section className="info-panel">
+            <h2>Original recipe</h2>
+            <p className="preserve-lines">
+              {current.originalText || "No original text recorded."}
+            </p>
+          </section>
+        </div>
+      )}
+      {tab === "History" && (
+        <div className="tab-content">
+          {" "}
+          <section className="history">
+            <h2>Recipe history</h2>
+            <p className="muted">
+              Version {recipe.revision} · Last saved{" "}
+              {new Date(recipe.updatedAt).toLocaleString()}
+            </p>
+            {recipe.history.length ? (
+              [...recipe.history].reverse().map((item) => (
+                <button
+                  className="history-row"
+                  key={item.revision}
+                  onClick={() => {
+                    setVersion(item);
+                    setServings(item.servings);
+                    setChecked([]);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  <span>
+                    Version {item.revision}
+                    <small>{item.changeNote || "Recipe saved"}</small>
+                  </span>
+                  <span>{new Date(item.updatedAt).toLocaleDateString()} ↗</span>
+                </button>
+              ))
+            ) : (
+              <p>
+                The original version is preserved when you make your first edit.
+              </p>
+            )}
+          </section>
+          <button
+            className="danger text-button"
+            disabled={busy}
+            onClick={onDelete}
+          >
+            Delete recipe
+          </button>
+        </div>
+      )}
     </article>
   );
 }
@@ -644,6 +801,7 @@ function RecipeEditor({
   onCancel: () => void;
 }) {
   const [data, setData] = useState(() => structuredClone(initial));
+  const [tab, setTab] = useState("Details");
   const [allergens, setAllergens] = useState(initial.allergens.join(", "));
   function field<K extends keyof RecipeData>(key: K, value: RecipeData[K]) {
     setData((previous) => ({ ...previous, [key]: value }));
@@ -660,6 +818,15 @@ function RecipeEditor({
   return (
     <form
       className="editor"
+      onInvalidCapture={(event) => {
+        const input = event.target as HTMLInputElement;
+        const section = input.closest<HTMLElement>("[data-editor-tab]");
+        if (section?.hidden) {
+          event.preventDefault();
+          setTab(section.dataset.editorTab!);
+          requestAnimationFrame(() => input.focus());
+        }
+      }}
       onSubmit={(event) => {
         event.preventDefault();
         onSave({
@@ -677,17 +844,54 @@ function RecipeEditor({
       <div className="page-heading">
         <div>
           <p className="eyebrow">A RECIPE WORTH KEEPING</p>
-          <h1>
-            {"id" in initial ? "Make it your own." : "From your kitchen."}
-          </h1>
+          <h1>{"id" in initial ? "Edit Recipe" : "Add Recipe"}</h1>
           <p className="subtitle">
-            Capture the ingredients, the method, and the story behind it.
+            Make changes to your recipe. Previous versions are saved
+            automatically.
           </p>
         </div>
       </div>
+      <Tabs
+        label="Recipe editor sections"
+        tabs={[
+          "Details",
+          "Ingredients",
+          "Instructions",
+          "Nutrition",
+          "Notes",
+          "Additional Info",
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
       <fieldset disabled={busy}>
-        <section className="form-section">
+        <section
+          className="form-section"
+          data-editor-tab="Details"
+          hidden={tab !== "Details"}
+        >
           <h2>The essentials</h2>
+          <div className="editor-photo">
+            <RecipePhoto recipe={data} />
+            <label>
+              Recipe image URL
+              <input
+                type="url"
+                placeholder="https://…"
+                value={data.imageUrl || ""}
+                onChange={(event) => field("imageUrl", event.target.value)}
+              />
+            </label>
+            {data.imageUrl && (
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => field("imageUrl", "")}
+              >
+                Remove image
+              </button>
+            )}
+          </div>
           <label>
             Recipe name
             <input
@@ -757,7 +961,11 @@ function RecipeEditor({
             </label>
           </div>
         </section>
-        <section className="form-section">
+        <section
+          className="form-section"
+          data-editor-tab="Ingredients"
+          hidden={tab !== "Ingredients"}
+        >
           <h2>Ingredients</h2>
           <p className="muted">
             Leave quantity empty for ingredients added to taste. Use decimals
@@ -849,7 +1057,11 @@ function RecipeEditor({
             ＋ Add ingredient
           </button>
         </section>
-        <section className="form-section">
+        <section
+          className="form-section"
+          data-editor-tab="Instructions"
+          hidden={tab !== "Instructions"}
+        >
           <h2>Cooking directions</h2>
           {data.steps.map((step, index) => (
             <div className="step-edit" key={index}>
@@ -892,7 +1104,11 @@ function RecipeEditor({
             ＋ Add step
           </button>
         </section>
-        <section className="form-section">
+        <section
+          className="form-section"
+          data-editor-tab="Additional Info"
+          hidden={tab !== "Additional Info"}
+        >
           <h2>The story & the source</h2>
           <div className="form-row">
             <label>
@@ -922,16 +1138,12 @@ function RecipeEditor({
               placeholder="Transcribe a recipe card or paste the original here to preserve it."
             />
           </label>
-          <label>
-            Kitchen notes & personal modifications
-            <textarea
-              value={data.notes}
-              onChange={(event) => field("notes", event.target.value)}
-              rows={3}
-            />
-          </label>
         </section>
-        <section className="form-section">
+        <section
+          className="form-section"
+          data-editor-tab="Nutrition"
+          hidden={tab !== "Nutrition"}
+        >
           <h2>Nutrition & allergens</h2>
           <p className="muted">
             Optional estimates per serving. Leave unknown values blank.
@@ -970,8 +1182,27 @@ function RecipeEditor({
             />
           </label>
         </section>
+        <section
+          className="form-section"
+          data-editor-tab="Notes"
+          hidden={tab !== "Notes"}
+        >
+          <h2>Kitchen notes</h2>{" "}
+          <label>
+            Kitchen notes & personal modifications
+            <textarea
+              value={data.notes}
+              onChange={(event) => field("notes", event.target.value)}
+              rows={3}
+            />
+          </label>
+        </section>
         {"id" in initial && (
-          <section className="form-section">
+          <section
+            className="form-section"
+            data-editor-tab="Notes"
+            hidden={tab !== "Notes"}
+          >
             <label>
               What changed?
               <input

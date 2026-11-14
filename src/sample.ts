@@ -1,6 +1,8 @@
 import type { RecipeData } from "./types";
 export const sampleRecipe: RecipeData = {
   title: "Sunday lemon & herb chicken",
+  imageUrl:
+    "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=1200&q=85",
   description:
     "Golden edges, a generous squeeze of lemon, and a pan full of good things. An easy recipe to make your own.",
   category: "Dinner",

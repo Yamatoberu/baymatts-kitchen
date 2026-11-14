@@ -22,7 +22,14 @@ export default async function handler(req, res) {
     const app = await appPromise;
     app(req, res);
   } catch (error) {
-    console.error("Recipe storage initialization failed", error.code);
+    const message = String(error.message ?? "")
+      .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, "[redacted database URL]")
+      .replace(/password\s*=\s*[^\s]+/gi, "[redacted password]");
+    console.error(
+      "Recipe storage initialization failed",
+      error.code ?? error.name,
+      message,
+    );
     res.status(503).json({ error: "Recipe storage is unavailable." });
   }
 }

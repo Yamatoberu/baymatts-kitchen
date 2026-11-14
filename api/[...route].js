@@ -4,14 +4,16 @@ import { createStore } from "../server/store.js";
 let appPromise;
 
 export default async function handler(req, res) {
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl =
+    process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+  if (!databaseUrl) {
     res.status(503).json({ error: "Recipe storage is unavailable." });
     return;
   }
 
   try {
     appPromise ??= createStore({
-      databaseUrl: process.env.DATABASE_URL,
+      databaseUrl,
       serverless: true,
     })
       .then(createApp)

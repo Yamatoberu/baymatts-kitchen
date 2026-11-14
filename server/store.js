@@ -22,6 +22,12 @@ export async function createStore({
       connectionString: databaseUrl,
       connectionTimeoutMillis: 8000,
     });
+    pool.on("error", (error) => {
+      console.error(
+        "Idle recipe database connection closed",
+        error.code ?? error.name,
+      );
+    });
     try {
       await pool.query("SELECT id FROM recipes LIMIT 0");
     } catch (error) {
